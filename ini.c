@@ -109,11 +109,17 @@ static char *unquote_inplace(char *val)
         } else if (*p == '\\') {
             p++;
             switch (*p) {
-            case '\\': *q++ = '\\'; p++; break;
+            case '\'': case '"': case '\\':
+                *q++ = *p++; break;
+            case 'a': *q++ = '\a'; p++; break;
+            case 'b': *q++ = '\b'; p++; break;
+            case 'f': *q++ = '\f'; p++; break;
             case 'n': *q++ = '\n'; p++; break;
             case 'r': *q++ = '\r'; p++; break;
             case 't': *q++ = '\t'; p++; break;
-            // TODO: more escape chars
+            case 'v': *q++ = '\v'; p++; break;
+            case '0': *q++ = '\0'; p++; break;
+            // TODO: \ddd \xhh
             default: return NULL;
             }
         } else {
