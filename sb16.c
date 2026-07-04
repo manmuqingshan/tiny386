@@ -34,7 +34,7 @@ void *pcmalloc(long size);
 #define TMPBUF_LEN 512
 #else
 #define pcmalloc malloc
-#define TMPBUF_LEN 2048
+#define TMPBUF_LEN 4096
 #endif
 
 #ifdef SB16_LOG
@@ -116,7 +116,7 @@ struct SB16State {
     int bytes_per_second;
     int align;
     int audio_free;
-#define AUDIO_BUF_LEN 2048
+#define AUDIO_BUF_LEN 4096
     uint8_t audio_buf[AUDIO_BUF_LEN];
     unsigned int audio_p, audio_q;
     void *voice;
@@ -1472,18 +1472,18 @@ void sb16_audio_callback (void *opaque, uint8_t *stream, int free)
     SB16State *s = opaque;
     s->audio_free = free;
 
-    if (!s->active_out)
-        return;
-
     unsigned int len = s->audio_q - s->audio_p;
     if (len > AUDIO_BUF_LEN) {
         s->audio_p = s->audio_q;
         return;
     }
 
+    if (!s->active_out && !len)
+        return;
+
     unsigned int p = s->audio_p % AUDIO_BUF_LEN;
 
-    int i;
+    int i = 0;
     switch (s->fmt) {
     case AUDIO_FORMAT_S16:
         if (s->fmt_stereo) {
@@ -1523,8 +1523,9 @@ void sb16_audio_callback (void *opaque, uint8_t *stream, int free)
         break;
     default:
         dolog("bad format %d\n", s->fmt);
-        s->audio_p = s->audio_q;
     }
+    if (i == 0)
+        s->audio_p = s->audio_q;
 }
 
 #if 0
