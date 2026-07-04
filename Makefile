@@ -1,6 +1,6 @@
 Q = @
 CC_ = gcc
-CC_win32 = i686-w64-mingw32-gcc
+CC_win32 = i686-w64-mingw32-gcc-win32
 CC = ${CC_${PLAT}}
 HOSTCC = ${CC}
 
