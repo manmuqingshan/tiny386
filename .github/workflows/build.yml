@@ -7,7 +7,7 @@ on:
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
 
     steps:
     - uses: actions/checkout@v3
@@ -26,14 +26,14 @@ jobs:
     - name: esp-idf build
       uses: espressif/esp-idf-ci-action@v1
       with:
-        esp_idf_version: v5.2.6
+        esp_idf_version: v5.2.7
         target: esp32s3
         command: scripts/build.sh patch_idf && scripts/build.sh esp
 
     - name: esp-idf esp32p4 build
       uses: espressif/esp-idf-ci-action@v1
       with:
-        esp_idf_version: v6.0.1
+        esp_idf_version: v6.0.2
         target: esp32p4
         command: scripts/build.sh patch_idf_60 && scripts/build.sh esp_p4
 
