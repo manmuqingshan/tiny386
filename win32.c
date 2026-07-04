@@ -1,4 +1,9 @@
 #ifdef _WIN32
+#define IN_WINPTHREAD
+#ifndef __clockid_t_defined
+typedef int clockid_t;
+#define __clockid_t_defined 1
+#endif  /* __clockid_t_defined */
 #include <time.h>
 
 /**

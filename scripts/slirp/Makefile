@@ -46,7 +46,7 @@ OBJS = ${SRCS:.c=.o}
 all: libslirp.a
 
 win32:
-	make -C . CC="i686-w64-mingw32-gcc-win32 -DTARGET_WINVER=0x501 -include slirp/src/winver.h"
+	make -C . CC="i686-w64-mingw32-gcc -DTARGET_WINVER=0x501 -include slirp/src/winver.h"
 
 libslirp.a: ${OBJS}
 	ar rcs $@ $^$>
