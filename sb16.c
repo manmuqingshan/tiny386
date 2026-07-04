@@ -34,7 +34,7 @@ void *pcmalloc(long size);
 #define TMPBUF_LEN 512
 #else
 #define pcmalloc malloc
-#define TMPBUF_LEN 4096
+#define TMPBUF_LEN 2048
 #endif
 
 #ifdef SB16_LOG
@@ -116,7 +116,7 @@ struct SB16State {
     int bytes_per_second;
     int align;
     int audio_free;
-#define AUDIO_BUF_LEN 4096
+#define AUDIO_BUF_LEN 2048
     uint8_t audio_buf[AUDIO_BUF_LEN];
     unsigned int audio_p, audio_q;
     void *voice;
@@ -1285,22 +1285,40 @@ static int SB_read_DMA (void *opaque, int nchan, int dma_pos, int dma_len)
     return dma_pos;
 }
 
-static int gcd(int a, int b)
+static void approx_frac(int *pn, int *pd)
 {
-    while (b != 0) {
-        int temp = b;
-        b = a % b;
-        a = temp;
+    int limit = 8;
+    int h0 = 0, h1 = 1;
+    int k0 = 1, k1 = 0;
+
+    int r = *pn, s = *pd;
+    int a, h2, k2;
+
+    while (s != 0) {
+        a = r / s;
+        int next_s = r % s;
+        r = s;
+        s = next_s;
+
+        h2 = a * h1 + h0;
+        k2 = a * k1 + k0;
+
+        if (k2 > limit) {
+            break;
+        }
+
+        h0 = h1; h1 = h2;
+        k0 = k1; k1 = k2;
     }
-    return a;
+
+    *pn = h1;
+    *pd = k1;
 }
 
 static int resample_s16m(int16_t *out, int olen, int os,
                          int16_t *in, int ip, int ilen, int itlen, int is)
 {
-    int g = gcd(os, is);
-    os = os / g;
-    is = is / g;
+    approx_frac(&os, &is);
     int uc = os;
     int dc = is;
     int i = 0;
@@ -1324,9 +1342,7 @@ static int resample_s16m(int16_t *out, int olen, int os,
 static int resample_s16s(int16_t *out, int olen, int os,
                          int16_t *in, int ip, int ilen, int itlen, int is)
 {
-    int g = gcd(os, is);
-    os = os / g;
-    is = is / g;
+    approx_frac(&os, &is);
     int uc = os;
     int dc = is;
     int i = 0;
@@ -1351,9 +1367,7 @@ static int resample_s16s(int16_t *out, int olen, int os,
 static int resample_u16m(int16_t *out, int olen, int os,
                          int16_t *in, int ip, int ilen, int itlen, int is)
 {
-    int g = gcd(os, is);
-    os = os / g;
-    is = is / g;
+    approx_frac(&os, &is);
     int uc = os;
     int dc = is;
     int i = 0;
@@ -1377,9 +1391,7 @@ static int resample_u16m(int16_t *out, int olen, int os,
 static int resample_u16s(int16_t *out, int olen, int os,
                          int16_t *in, int ip, int ilen, int itlen, int is)
 {
-    int g = gcd(os, is);
-    os = os / g;
-    is = is / g;
+    approx_frac(&os, &is);
     int uc = os;
     int dc = is;
     int i = 0;
@@ -1404,9 +1416,7 @@ static int resample_u16s(int16_t *out, int olen, int os,
 static int resample_u8m(int16_t *out, int olen, int os,
                         uint8_t *in, int ip, int ilen, int itlen, int is)
 {
-    int g = gcd(os, is);
-    os = os / g;
-    is = is / g;
+    approx_frac(&os, &is);
     int uc = os;
     int dc = is;
     int i = 0;
@@ -1432,9 +1442,7 @@ static int resample_u8m(int16_t *out, int olen, int os,
 static int resample_u8s(int16_t *out, int olen, int os,
                         uint8_t *in, int ip, int ilen, int itlen, int is)
 {
-    int g = gcd(os, is);
-    os = os / g;
-    is = is / g;
+    approx_frac(&os, &is);
     int uc = os;
     int dc = is;
     int i = 0;
