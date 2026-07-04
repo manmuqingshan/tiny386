@@ -51,4 +51,10 @@ int clock_gettime(clockid_t clockid, struct timespec *tp)
 	clock_gettime_monotonic(tp);
 	return 0;
 }
+
+int clock_gettime32(clockid_t clockid, struct timespec *tp)
+{
+	clock_gettime_monotonic(tp);
+	return 0;
+}
 #endif
