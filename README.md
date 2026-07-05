@@ -20,15 +20,22 @@ To assemble a complete PC system, we have ported many peripherals from TinyEMU a
 
 For firmware, the BIOS/VGABIOS comes from seabios. Tiny386 also supports booting linux kernel directly, without traditional BIOS. The idea comes from JSLinux, and it uses a small stub code called linuxstart.
 
+Tiny386 now supports i686, MMX, SSE (up to SSSE3) and amd64 (64bit long mode only). As these features are optional, they may be safely disregarded if not required.
+
 ## Demo
 See [here](https://hchunhui.github.io/tiny386)
 
 ## Build
-Linux (with rawdraw): You need to install `libslirp` `libx11` and `libasound2` first, then type `make`.
 
-Linux (with SDL): You need to install `libslirp` `SDL1.2` (or `sdl12-compat`) first, then type `make USE_SDL=y`.
+The project is designed with simplicity in mind. Just run `gcc -O3 *.c -o tiny386_headless -lm`, and you will get a "headless" executable without any optional features.
 
-For other platforms, please refer to `.github/workflows/build.yml`.
+To build with display and sound:
+- Linux (with rawdraw): Install `libslirp`, `libx11`, and `libasound2` first, then run `make`.
+- Linux (with SDL): Install `libslirp` `SDL1.2` (or `sdl12-compat`) first, then run `make USE_SDL=y`.
+- Windows: Install `mingw-w64` first, then run `make win32`.
+- WebAssembly: Install `clang` first, then run `cd wasm; make`.
+
+For details, please refer to `.github/workflows/build.yml` and `Makefile`.
 
 Pre-built binaries: [here](https://github.com/hchunhui/tiny386/releases)
 
