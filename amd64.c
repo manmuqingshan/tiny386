@@ -4213,6 +4213,23 @@ static bool pmret(CPUAMD64 *cpu, bool opsz16, int rex, int off, bool isiret)
 			cpu->next_ip = newip;
 			cpu->cc.mask = 0;
 		} else {
+			// We don't support 32bit compat mode and
+			// legacy mode for now. But linux kernel < 6.6
+			// jumps to a 32bit trampoline in early
+			// booting process, for changing 4/5-level
+			// paging mode, even if it doesn't have to.
+			// The workaround is to ignore the far jump.
+			if (!cpu->cr3_valid) {
+				uword w1, w2;
+				TRY(read_desc(cpu, newcs, &w1, &w2));
+				if (!(w2 & (1 << 21))) {
+					dolog("workaround for 32bit trampoline\n");
+					cpu_debug(cpu);
+					set_sp(sp + 16 + off);
+					return true;
+				}
+			}
+
 			// out of spec
 			if (cpu->cpl != (newcs & 3))
 				THROW(EX_GP, 0);
