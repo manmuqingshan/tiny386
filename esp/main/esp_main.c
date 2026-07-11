@@ -179,6 +179,7 @@ struct esp_ini_config {
 	const char *filename;
 	char ssid[16];
 	char pass[32];
+	int enable_usb;
 };
 
 static void i386_task(void *arg)
@@ -236,6 +237,8 @@ static int parse_ini(void* user, const char* section,
 		} else if (NAME("pass")) {
 			if (strlen(value) < 64)
 				strcpy(conf->pass, value);
+		} else if (NAME("enable_usb")) {
+			conf->enable_usb = atoi(value);
 		}
 	}
 #undef SEC
@@ -290,7 +293,10 @@ void app_main(void)
 		}
 	}
 
-	usb_setup();
+	if (config.enable_usb) {
+		vTaskDelay(2000 / portTICK_PERIOD_MS);
+		usb_setup();
+	}
 
 	if (config.ssid[0]) {
 		wifi_main(config.ssid, config.pass);
