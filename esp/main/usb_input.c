@@ -433,7 +433,7 @@ void usb_setup(void)
      */
     task_created = xTaskCreatePinnedToCore(usb_lib_task,
                                            "usb_events",
-                                           4096,
+                                           2048,
                                            xTaskGetCurrentTaskHandle(),
                                            2, NULL, 0);
     assert(task_created == pdTRUE);
@@ -461,7 +461,7 @@ void usb_setup(void)
 
     ESP_LOGI(TAG, "Waiting for HID Device to be connected");
 
-    xTaskCreatePinnedToCore(usb_task, "usb_task", 4096, NULL, 0, NULL, 0);
+    xTaskCreatePinnedToCore(usb_task, "usb_task", 2048, NULL, 0, NULL, 0);
 }
 void usb_task(void *arg)
 {
