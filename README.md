@@ -126,9 +126,17 @@ Alternative usage: `bios.bin` `vgabios.bin` `vmlinux.bin` and `linuxstart.bin` c
 (ESP32-S3 board: listen on TCP port 9999) <--- WIFI ---> AP <--- WIFI/Wire ---> (PC: ./wifikbd esp_board_addr 9999)
 ```
 
-- USB hid (WIP)
+- USB hid (experimental)
 
-See [here](https://github.com/hchunhui/tiny386/pull/4).
+Add the following config:
+```
+[esp]
+enable_usb = 1
+```
+
+Note: DO NOT enable USB and WIFI at the same time on ESP32-S3, due to insufficient memory.
+
+More info, see [here](https://github.com/hchunhui/tiny386/pull/4).
 
 ## Troubleshooting
 
