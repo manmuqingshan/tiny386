@@ -263,7 +263,7 @@ static int ne2000_can_receive(void *opaque)
 
 #define MIN_BUF_SIZE 60
 
-static void ne2000_receive(void *opaque, const uint8_t *buf, int size)
+void ne2000_receive(void *opaque, const uint8_t *buf, int size)
 {
     NE2000State *s = opaque;
     uint8_t *p;
@@ -598,7 +598,7 @@ static void *net_open_slirp(NE2000State *s)
 }
 #endif
 
-#ifdef BUILD_ESP32
+#if defined(BUILD_ESP32)
 extern void (*_Atomic esp32_send_packet)(uint8_t *buf, int size);
 static void qemu_send_packet_null(void *vc, uint8_t *buf, int size)
 {
@@ -607,6 +607,12 @@ static void qemu_send_packet_null(void *vc, uint8_t *buf, int size)
                                        memory_order_relaxed);
     if (send_packet)
         send_packet(buf, size);
+}
+#elif defined(__wasm__)
+void on_packet_cb(uint8_t *buf, int size);
+static void qemu_send_packet_null(void *vc, uint8_t *buf, int size)
+{
+    on_packet_cb(buf, size);
 }
 #else
 #include <stdio.h>
@@ -646,6 +652,7 @@ void ne2000_step(NE2000State *s)
         ne2000_step_null(s);
 }
 
+#include <stdio.h>
 static void *net_open(NE2000State *s)
 {
     VC *vc = NULL;

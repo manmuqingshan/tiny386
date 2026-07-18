@@ -155,3 +155,11 @@ float *wasm_getaudio_f32(Console *console)
 	}
 	return audiobuf;
 }
+
+
+extern void ne2000_receive(void *opaque, const uint8_t *buf, int size);
+WASM_EXPORT
+void wasm_inject_packet(Console *console, uint8_t *buf, int size)
+{
+	ne2000_receive(console->pc->ne2000, buf, size);
+}
