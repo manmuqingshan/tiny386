@@ -411,14 +411,14 @@ int CNFGHandleInput()
 		switch( msg.message )
 		{
 		case WM_MOUSEMOVE: if (!CNFGRelPos) {
-			HandleMotion( (msg.lParam & 0xFFFF), (msg.lParam>>16) & 0xFFFF, ( (msg.wParam & 0x01)?1:0) | ((msg.wParam & 0x02)?2:0) | ((msg.wParam & 0x10)?4:0) );
+			HandleMotion( (msg.lParam & 0xFFFF), (msg.lParam>>16) & 0xFFFF, ( (msg.wParam & 0x01)?1:0) | ((msg.wParam & 0x02)?4:0) | ((msg.wParam & 0x10)?2:0) );
 		} break;
 		case WM_LBUTTONDOWN:	__HandleButton( (msg.lParam & 0xFFFF), (msg.lParam>>16) & 0xFFFF, 1, 1 ); break;
-		case WM_RBUTTONDOWN:	__HandleButton( (msg.lParam & 0xFFFF), (msg.lParam>>16) & 0xFFFF, 2, 1 ); break;
-		case WM_MBUTTONDOWN:	__HandleButton( (msg.lParam & 0xFFFF), (msg.lParam>>16) & 0xFFFF, 3, 1 ); break;
+		case WM_RBUTTONDOWN:	__HandleButton( (msg.lParam & 0xFFFF), (msg.lParam>>16) & 0xFFFF, 3, 1 ); break;
+		case WM_MBUTTONDOWN:	__HandleButton( (msg.lParam & 0xFFFF), (msg.lParam>>16) & 0xFFFF, 2, 1 ); break;
 		case WM_LBUTTONUP:		__HandleButton( (msg.lParam & 0xFFFF), (msg.lParam>>16) & 0xFFFF, 1, 0 ); break;
-		case WM_RBUTTONUP:		__HandleButton( (msg.lParam & 0xFFFF), (msg.lParam>>16) & 0xFFFF, 2, 0 ); break;
-		case WM_MBUTTONUP:		__HandleButton( (msg.lParam & 0xFFFF), (msg.lParam>>16) & 0xFFFF, 3, 0 ); break;
+		case WM_RBUTTONUP:		__HandleButton( (msg.lParam & 0xFFFF), (msg.lParam>>16) & 0xFFFF, 3, 0 ); break;
+		case WM_MBUTTONUP:		__HandleButton( (msg.lParam & 0xFFFF), (msg.lParam>>16) & 0xFFFF, 2, 0 ); break;
 		case WM_SYSKEYDOWN:
 		case WM_KEYDOWN:
 			// Check if there is a WM_CHAR message in the queue. If there is one, put it into CNFGLastCharacter
@@ -466,10 +466,10 @@ int CNFGHandleInput()
 					int rely = raw->data.mouse.lLastY;
 					if (raw->data.mouse.usButtonFlags & 1) mask |= 1;
 					if (raw->data.mouse.usButtonFlags & 2) mask &= ~1;
-					if (raw->data.mouse.usButtonFlags & 0x10) mask |= 4;
-					if (raw->data.mouse.usButtonFlags & 0x20) mask &= ~4;
-					if (raw->data.mouse.usButtonFlags & 4) mask |= 2;
-					if (raw->data.mouse.usButtonFlags & 8) mask &= ~2;
+					if (raw->data.mouse.usButtonFlags & 0x10) mask |= 2;
+					if (raw->data.mouse.usButtonFlags & 0x20) mask &= ~2;
+					if (raw->data.mouse.usButtonFlags & 4) mask |= 4;
+					if (raw->data.mouse.usButtonFlags & 8) mask &= ~4;
 					HandleMotionRel(relx, rely, mask);
 				}
 			}
