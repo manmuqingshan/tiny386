@@ -1190,7 +1190,10 @@ static int write_audio (SB16State *s, int nchan, int dma_pos,
 
         copied = i8257_dma_read_memory(isa_dma, nchan, tmpbuf, dma_pos, to_copy);
 
-        unsigned int len = AUDIO_BUF_LEN - (s->audio_q - s->audio_p);
+        unsigned int limit = AUDIO_BUF_LEN;
+        if (s->freq < 22050 || s->fmt < 2)
+            limit = AUDIO_BUF_LEN / 2;
+        unsigned int len = limit - (s->audio_q - s->audio_p);
         if (len > AUDIO_BUF_LEN)
             len = 0;
         if (copied < len)
@@ -1478,8 +1481,10 @@ void sb16_audio_callback (void *opaque, uint8_t *stream, int free)
         return;
     }
 
-    if (!s->active_out && !len)
+    if (!s->active_out) {
+        s->audio_p = s->audio_q;
         return;
+    }
 
     unsigned int p = s->audio_p % AUDIO_BUF_LEN;
 
