@@ -37,6 +37,18 @@ void *pcmalloc(long size);
 #define TMPBUF_LEN 4096
 #endif
 
+#ifdef __wasm__
+#define AUDIO_BUF_LEN 8192
+#define AUDIO_BUF_LIMIT 4096
+#define AUDIO_BUF_LIMIT_HIGH 8192
+#define AUDIO_BUF_LIMIT_LOW 2048
+#else
+#define AUDIO_BUF_LEN 4096
+#define AUDIO_BUF_LIMIT 4096
+#define AUDIO_BUF_LIMIT_HIGH 4096
+#define AUDIO_BUF_LIMIT_LOW 2048
+#endif
+
 #ifdef SB16_LOG
 #define dolog(...) fprintf(stderr, "sb16: " __VA_ARGS__)
 #define qemu_log_mask(_, ...) fprintf(stderr, "sb16: " __VA_ARGS__)
@@ -116,7 +128,6 @@ struct SB16State {
     int bytes_per_second;
     int align;
     int audio_free;
-#define AUDIO_BUF_LEN 4096
     uint8_t audio_buf[AUDIO_BUF_LEN];
     unsigned int audio_p, audio_q;
     void *voice;
@@ -1190,9 +1201,11 @@ static int write_audio (SB16State *s, int nchan, int dma_pos,
 
         copied = i8257_dma_read_memory(isa_dma, nchan, tmpbuf, dma_pos, to_copy);
 
-        unsigned int limit = AUDIO_BUF_LEN;
-        if (s->freq < 22050 || s->fmt < 2)
-            limit = AUDIO_BUF_LEN / 2;
+        unsigned int limit = AUDIO_BUF_LIMIT;
+        if (s->freq >= 44100 && s->fmt >= 2)
+            limit = AUDIO_BUF_LIMIT_HIGH;
+        else if (s->freq < 22050 || s->fmt < 2)
+            limit = AUDIO_BUF_LIMIT_LOW;
         unsigned int len = limit - (s->audio_q - s->audio_p);
         if (len > AUDIO_BUF_LEN)
             len = 0;
