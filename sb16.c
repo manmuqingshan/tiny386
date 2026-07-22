@@ -1483,6 +1483,7 @@ static int resample_u8s(int16_t *out, int olen, int os,
     return i;
 }
 
+// XXX: There are races, but we accept them for now.
 void sb16_audio_callback (void *opaque, uint8_t *stream, int free)
 {
     SB16State *s = opaque;
@@ -1494,8 +1495,7 @@ void sb16_audio_callback (void *opaque, uint8_t *stream, int free)
         return;
     }
 
-    if (!s->active_out) {
-        s->audio_p = s->audio_q;
+    if (!s->active_out && !len) {
         return;
     }
 
@@ -1513,8 +1513,7 @@ void sb16_audio_callback (void *opaque, uint8_t *stream, int free)
                               (int16_t *) s->audio_buf, p / 2, len / 2,
                               AUDIO_BUF_LEN / 2, s->freq);
         }
-        i *= 2;
-        s->audio_p += i;
+        s->audio_p = (s->audio_p + i * 2) & ~1;
         break;
     case AUDIO_FORMAT_U16:
         if (s->fmt_stereo) {
@@ -1526,8 +1525,7 @@ void sb16_audio_callback (void *opaque, uint8_t *stream, int free)
                               (int16_t *) s->audio_buf, p / 2, len / 2,
                               AUDIO_BUF_LEN / 2, s->freq);
         }
-        i *= 2;
-        s->audio_p += i;
+        s->audio_p = (s->audio_p + i * 2) & ~1;
         break;
     case AUDIO_FORMAT_U8:
         if (s->fmt_stereo) {
@@ -1542,8 +1540,6 @@ void sb16_audio_callback (void *opaque, uint8_t *stream, int free)
     default:
         dolog("bad format %d\n", s->fmt);
     }
-    if (i == 0)
-        s->audio_p = s->audio_q;
 }
 
 #if 0
