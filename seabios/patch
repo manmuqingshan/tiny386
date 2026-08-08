@@ -163,10 +163,10 @@ index 9e6647d4..1745c3a7 100644
 +            outl(op->chs, 0xf1f4);
 +            outl(op->count, 0xf1f4);
 +            if (inl(0xf1f0) != 0)
-+                return DISK_RET_EMEDIA;
++                return DISK_RET_ETIMEOUT;
 +            insb_fl(0xf1f4, op->buf_fl, op->count * 512);
 +            if (inl(0xf1f0) != 0)
-+                return DISK_RET_EMEDIA;
++                return DISK_RET_ETIMEOUT;
 +            return 0;
 +        }
 +        case CMD_WRITE: {
@@ -176,10 +176,10 @@ index 9e6647d4..1745c3a7 100644
 +            outl(op->chs, 0xf1f4);
 +            outl(op->count, 0xf1f4);
 +            if (inl(0xf1f0) != 0)
-+                return DISK_RET_EMEDIA;
++                return DISK_RET_ETIMEOUT;
 +            outsb_fl(0xf1f4, op->buf_fl, op->count * 512);
 +            if (inl(0xf1f0) != 0)
-+                return DISK_RET_EMEDIA;
++                return DISK_RET_ETIMEOUT;
 +            return 0;
 +        }
 +        case CMD_VERIFY:
