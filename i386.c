@@ -1737,6 +1737,7 @@ noinline void IRAM_ATTR try_jcc8(CPUI386 *cpu)
 			if ((cpu->cc.dst == 0) ^ (op & 1)) {
 				sword d = sext8(pload8(cpu, cpu->ifetch.paddr + 1));
 				cpu->next_ip += d + 2;
+				if (cpu->code16) cpu->next_ip &= 0xffff;
 			}
 		}
 	}
@@ -2961,39 +2962,39 @@ static bool call_isr(CPUI386 *cpu, int no, bool pusherr, int ext);
 #define JCXZb(i, li, _) \
 	sword d = sext8(li(i)); \
 	if (adsz16) { \
-		if (lreg16(1) == 0) cpu->next_ip += d; \
+		if (lreg16(1) == 0) { cpu->next_ip += d; if (code16) cpu->next_ip &= 0xffff; } \
 	} else { \
-		if (lreg32(1) == 0) cpu->next_ip += d; \
+		if (lreg32(1) == 0) { cpu->next_ip += d; if (code16) cpu->next_ip &= 0xffff; } \
 	}
 
 #define LOOPb(i, li, _) \
 	sword d = sext8(li(i)); \
 	if (adsz16) { \
 		sreg16(1, lreg16(1) - 1); \
-		if (lreg16(1)) cpu->next_ip += d; \
+		if (lreg16(1)) { cpu->next_ip += d; if (code16) cpu->next_ip &= 0xffff; } \
 	} else { \
 		sreg32(1, lreg32(1) - 1); \
-		if (lreg32(1)) cpu->next_ip += d; \
+		if (lreg32(1)) { cpu->next_ip += d; if (code16) cpu->next_ip &= 0xffff; } \
 	}
 
 #define LOOPEb(i, li, _) \
 	sword d = sext8(li(i)); \
 	if (adsz16) { \
 		sreg16(1, lreg16(1) - 1); \
-		if (lreg16(1) && get_ZF(cpu)) cpu->next_ip += d; \
+		if (lreg16(1) && get_ZF(cpu)) { cpu->next_ip += d; if (code16) cpu->next_ip &= 0xffff; } \
 	} else { \
 		sreg32(1, lreg32(1) - 1); \
-		if (lreg32(1) && get_ZF(cpu)) cpu->next_ip += d; \
+		if (lreg32(1) && get_ZF(cpu)) { cpu->next_ip += d; if (code16) cpu->next_ip &= 0xffff; } \
 	}
 
 #define LOOPNEb(i, li, _) \
 	sword d = sext8(li(i)); \
 	if (adsz16) { \
 		sreg16(1, lreg16(1) - 1); \
-		if (lreg16(1) && !get_ZF(cpu)) cpu->next_ip += d; \
+		if (lreg16(1) && !get_ZF(cpu)) { cpu->next_ip += d; if (code16) cpu->next_ip &= 0xffff; } \
 	} else { \
 		sreg32(1, lreg32(1) - 1); \
-		if (lreg32(1) && !get_ZF(cpu)) cpu->next_ip += d; \
+		if (lreg32(1) && !get_ZF(cpu)) { cpu->next_ip += d; if (code16) cpu->next_ip &= 0xffff; } \
 	}
 
 #define COND() \
@@ -3019,7 +3020,7 @@ static bool call_isr(CPUI386 *cpu, int no, bool pusherr, int ext);
 
 #define JCC_common(d) \
 	COND() \
-	if (cond) cpu->next_ip += d;
+	if (cond) { cpu->next_ip += d; if (code16) cpu->next_ip &= 0xffff; } \
 
 #define SETCCb(a, la, sa) \
 	COND() \
@@ -3039,15 +3040,15 @@ static bool call_isr(CPUI386 *cpu, int no, bool pusherr, int ext);
 
 #define JMPb(i, li, _) \
 	sword d = sext8(li(i)); \
-	cpu->next_ip += d;
+	cpu->next_ip += d; if (code16) cpu->next_ip &= 0xffff;
 
 #define JMPw(i, li, _) \
 	sword d = sext16(li(i)); \
-	cpu->next_ip += d;
+	cpu->next_ip += d; if (code16) cpu->next_ip &= 0xffff;
 
 #define JMPd(i, li, _) \
 	sword d = sext32(li(i)); \
-	cpu->next_ip += d;
+	cpu->next_ip += d; if (code16) cpu->next_ip &= 0xffff;
 
 #define JMPABSw(i, li, _) \
 	cpu->next_ip = li(i);
@@ -3092,7 +3093,7 @@ static bool call_isr(CPUI386 *cpu, int no, bool pusherr, int ext);
 	TRY(translate16(cpu, &meml, 2, SEG_SS, (sp - 2) & sp_mask)); \
 	set_sp(sp - 2, sp_mask); \
 	saddr16(&meml, cpu->next_ip); \
-	cpu->next_ip += d;
+	cpu->next_ip += d; if (code16) cpu->next_ip &= 0xffff;
 
 #define CALLd(i, li, _) \
 	sword d = sext32(li(i)); \
@@ -3100,7 +3101,7 @@ static bool call_isr(CPUI386 *cpu, int no, bool pusherr, int ext);
 	TRY(translate32(cpu, &meml, 2, SEG_SS, (sp - 4) & sp_mask)); \
 	set_sp(sp - 4, sp_mask); \
 	saddr32(&meml, cpu->next_ip); \
-	cpu->next_ip += d;
+	cpu->next_ip += d; if (code16) cpu->next_ip &= 0xffff;
 
 #define CALLABSw(i, li, _) \
 	uword nip = li(i); \
@@ -3931,7 +3932,6 @@ static bool IRAM_ATTR_CPU_EXEC1 cpu_exec1(CPUI386 *cpu, int stepcount)
 	bool code16 = cpu->code16;
 	uword sp_mask = cpu->sp_mask;
 
-	if (code16) cpu->next_ip &= 0xffff;
 	cpu->ip = cpu->next_ip;
 	TRY(fetch8pf(cpu, &b1));
 	cpu->cycle++;
@@ -4980,7 +4980,7 @@ static bool pmret(CPUI386 *cpu, bool opsz16, int off, bool isiret)
 		cpu->flags = newflags;
 		TRY1(set_seg(cpu, SEG_CS, newcs));
 		set_sp(sp + 12, sp_mask);
-		cpu->next_ip = newip;
+		cpu->next_ip = newip & 0xffff;
 		TRY1(set_seg(cpu, SEG_SS, laddr32(&meml5)));
 		TRY1(set_seg(cpu, SEG_ES, laddr32(&meml_vmes)));
 		TRY1(set_seg(cpu, SEG_DS, laddr32(&meml_vmds)));
