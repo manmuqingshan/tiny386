@@ -3453,7 +3453,7 @@ static bool check_ioperm(CPUAMD64 *cpu, int port, int bit)
 	case 1: \
 		REGi(0) = 0 | (0 << 4) | (6 << 8); /*gen*/ \
 		REGi(3) = 0; \
-		REGi(2) = 0x100; \
+		REGi(2) = 0x110; \
 		REGi(1) = 0; \
 		REGi(2) |= 1; \
 		REGi(2) |= 0x8020; \

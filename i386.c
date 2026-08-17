@@ -3768,7 +3768,7 @@ static bool verrw_helper(CPUI386 *cpu, int sel, int wr, int *zf)
 	case 1: \
 		REGi(0) = 0 | (0 << 4) | (cpu->gen << 8); \
 		REGi(3) = 0; \
-		REGi(2) = 0x100; \
+		REGi(2) = 0x110; \
 		REGi(1) = 0; \
 		if (cpu->fpu) REGi(2) |= 1; \
 		if (cpu->gen > 5) REGi(2) |= 0x8820; \
