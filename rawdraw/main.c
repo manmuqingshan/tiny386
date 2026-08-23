@@ -300,6 +300,7 @@ int main(int argc, char *argv[])
 			}
 		}
 		argv1 = argv[argc - 1];
+		ne2000_set_config_file(argv1);
 	} else {
 		usage(argv[0]);
 		return 1;
