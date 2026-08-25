@@ -56,6 +56,19 @@ static void redraw(void *opaque,
 {
 }
 
+#include "term.h"
+static void put_key(void *o, unsigned char scan_code, int is_pressed)
+{
+	ps2_put_keycode(o, is_pressed, scan_code);
+}
+
+static void usage(const char *argv0)
+{
+	fprintf(stderr,
+		"Usage: %s [-kvm] [-term] inifile\n",
+		argv0);
+}
+
 int main(int argc, char *argv[])
 {
 	PCConfig conf;
@@ -69,14 +82,22 @@ int main(int argc, char *argv[])
 
 	const char *argv1;
 	bool enable_kvm = false;
-	if (argc == 2) {
-		argv1 = argv[1];
-	} else if (argc == 3) {
-		if (strcmp(argv[1], "-kvm") == 0)
-			enable_kvm = true;
-		argv1 = argv[2];
+	bool use_term = false;
+	if (argc > 1) {
+		for (int i = 1; i < argc - 1; i++) {
+			if (strcmp(argv[i], "-kvm") == 0)
+				enable_kvm = true;
+			else if (strcmp(argv[i], "-term") == 0)
+				use_term = true;
+			else {
+				usage(argv[0]);
+				return 1;
+			}
+		}
+		argv1 = argv[argc - 1];
 		ne2000_set_config_file(argv1);
 	} else {
+		usage(argv[0]);
 		return 1;
 	}
 
@@ -90,12 +111,17 @@ int main(int argc, char *argv[])
 
 	void *fb = bigmalloc(conf.width * conf.height * 4);
 	PC *pc = pc_new(redraw, NULL, fb, &conf);
+	Term *term = NULL;
+	if (use_term)
+		term = term_init(pc->vga, put_key, pc->kbd);
 	load_bios_and_reset(pc);
 
 	pc->boot_start_time = get_uticks();
 	for (; pc->shutdown_state != 8;) {
 		pc_step(pc);
 		pc_vga_step(pc);
+		if (use_term)
+			term_step(term);
 	}
 	return 0;
 }

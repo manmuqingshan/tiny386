@@ -5,6 +5,7 @@
 #include <assert.h>
 #include "pc.h"
 #include "osd/osd.h"
+#include "term.h"
 
 #define CNFG_IMPLEMENTATION
 #include "CNFG.h"
@@ -168,6 +169,11 @@ static int translate_key(int cnfgkeycode)
 #endif	
 }
 
+static void put_key(void *o, unsigned char scan_code, int is_pressed)
+{
+	ps2_put_keycode(o, is_pressed, scan_code);
+}
+
 #define KEYCODE_MAX 127
 static uint8_t key_pressed[KEYCODE_MAX + 1];
 
@@ -243,7 +249,7 @@ int HandleDestroy()
 	return 0;
 }
 
-void cnfa_callback(struct CNFADriver * sd, short * out, short * in, int framesp, int framesr)
+static void cnfa_callback(struct CNFADriver * sd, short * out, short * in, int framesp, int framesr)
 {
 	PC *pc = sd->opaque;
 	int channels = sd->channelsPlay;
@@ -251,7 +257,7 @@ void cnfa_callback(struct CNFADriver * sd, short * out, short * in, int framesp,
 	mixer_callback(pc, (void *) out, framesp * channels * 2);
 }
 
-void console_set_audio(Console *console)
+static bool setup_audio(PC *pc)
 {
 	struct CNFADriver * cnfa;
 	cnfa = CNFAInit(
@@ -262,15 +268,14 @@ void console_set_audio(Console *console)
 		2, //Number of playback channels.
 		0, //Number of record channels.
 		1024, //Buffer size in frames.
-		0, 0, console->pc);
-	if (!cnfa)
-		abort();
+		0, 0, pc);
+	return !!cnfa;
 }
 
 static void usage(const char *argv0)
 {
 	fprintf(stderr,
-		"Usage: %s [-kvm] [-headless] inifile\n",
+		"Usage: %s [-kvm] [-headless] [-term] inifile\n",
 		argv0);
 }
 
@@ -288,13 +293,17 @@ int main(int argc, char *argv[])
 	const char *argv1;
 	bool enable_kvm = false;
 	bool headless = false;
+	bool use_term = false;
 	if (argc > 1) {
 		for (int i = 1; i < argc - 1; i++) {
 			if (strcmp(argv[i], "-kvm") == 0)
 				enable_kvm = true;
 			else if (strcmp(argv[i], "-headless") == 0)
 				headless = true;
-			else {
+			else if (strcmp(argv[i], "-term") == 0) {
+				headless = true;
+				use_term = true;
+			} else {
 				usage(argv[0]);
 				return 1;
 			}
@@ -317,12 +326,18 @@ int main(int argc, char *argv[])
 	if (headless) {
 		void *fb = bigmalloc(conf.width * conf.height * 4);
 		PC *pc = pc_new(dummy, NULL, fb, &conf);
+		setup_audio(pc);
+		Term *term = NULL;
+		if (use_term)
+			term = term_init(pc->vga, put_key, pc->kbd);
 		load_bios_and_reset(pc);
 
 		pc->boot_start_time = get_uticks();
 		for (; pc->shutdown_state != 8;) {
 			pc_step(pc);
 			pc_vga_step(pc);
+			if (use_term)
+				term_step(term);
 		}
 		return 0;
 	}
@@ -330,7 +345,7 @@ int main(int argc, char *argv[])
 	Console *console = console_init(conf.width, conf.height);
 	PC *pc = pc_new(redraw, console, console->fb, &conf);
 	console->pc = pc;
-	console_set_audio(console);
+	setup_audio(pc);
 	load_bios_and_reset(pc);
 
 	pc->boot_start_time = get_uticks();

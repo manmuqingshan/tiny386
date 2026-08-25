@@ -128,6 +128,9 @@ struct VGAState {
     uint32_t latch;
 
     int comp_ntsc;
+    int term_refresh;
+    VGATextOps *vga_text_ops;
+    void *vga_text_obj;
     
     /* text mode state */
     uint32_t last_palette[16];
@@ -726,6 +729,20 @@ static void vga_text_refresh(VGAState *s,
     if (after_eq(now, s->cursor_blink_time)) {
         s->cursor_blink_time = now + 133333;
         s->cursor_visible_phase = !s->cursor_visible_phase;
+        if (s->term_refresh) {
+            int width = (s->cr[0x01] + 1);
+            uint32_t start_addr = s->cr[0x0d] | (s->cr[0x0c] << 8);
+            int cheight = (s->cr[9] & 0x1f) + 1;
+            int height = s->cr[0x12] |
+                ((s->cr[0x07] & 0x02) << 7) |
+                ((s->cr[0x07] & 0x40) << 3);
+            height = (height + 1) / cheight;
+            s->vga_text_ops->refresh(
+                s->vga_text_obj,
+                s->vga_ram + start_addr * 4,
+                width, height);
+            s->term_refresh = 0;
+        }
     }
 
     full_update = full_update || update_palette16(s, s->last_palette);
@@ -1563,6 +1580,17 @@ void vga_ioport_write(VGAState *s, uint32_t addr, uint32_t val)
             s->cr[s->cr_index] = val;
             break;
         }
+        if (s->vga_text_ops && s->graphic_mode == 1) {
+            int width = (s->cr[0x01] + 1);
+            uint32_t start_addr = s->cr[0x0d] | (s->cr[0x0c] << 8);
+            if (s->cr_index != 0xe && s->cr_index != 0xf) {
+                s->term_refresh = 1;
+            }
+            uint32_t coff = ((s->cr[0x0e] << 8) | s->cr[0x0f]) - start_addr;
+            s->vga_text_ops->set_cursor(
+                s->vga_text_obj,
+                coff / width, coff % width);
+        }
         break;
     case 0x3ba:
     case 0x3da:
@@ -1940,6 +1968,16 @@ void IRAM_ATTR vga_mem_write(VGAState *s, uint32_t addr, uint8_t val8)
                 return;
             }
             s->vga_ram[addr] = val;
+            if (s->vga_text_ops && s->graphic_mode == 1 && !s->term_refresh) {
+                int width = (s->cr[0x01] + 1);
+                uint32_t start_addr = s->cr[0x0d] | (s->cr[0x0c] << 8);
+                uint32_t aoff = addr - start_addr * 4;
+                s->vga_text_ops->put_char2(
+                    s->vga_text_obj,
+                    aoff / 4 / width, aoff / 4 % width,
+                    s->vga_ram[addr & ~1], s->vga_ram[addr | 1]);
+            }
+
 #ifdef DEBUG_VGA_MEM
             printf("vga: odd/even: [0x" TARGET_FMT_plx "]\n", addr);
 #endif
@@ -2476,4 +2514,10 @@ static void vga_initmode(VGAState *s)
     }
 
     s->ar_index = 0x20;
+}
+
+void vga_set_text_ops(VGAState *s, VGATextOps *ops, void *o)
+{
+    s->vga_text_ops = ops;
+    s->vga_text_obj = o;
 }

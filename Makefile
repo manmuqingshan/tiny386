@@ -109,6 +109,7 @@ SRCS += ${CPUABS_${USE_CPUABS}}
 SRCS += pc.c
 SRCS += pci.c
 SRCS += win32.c
+SRCS += term.c
 # OSD
 SRCS += osd/microui.c osd/osd.c
 
