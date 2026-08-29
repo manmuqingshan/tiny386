@@ -32,12 +32,8 @@
 //#include "pc.h"
 //#include "net.h"
 
-#ifndef BUILD_ESP32
 #if defined(_WIN32)
 #include <winsock2.h>
-#endif
-#else
-#include "esp_mac.h"
 #endif
 
 #ifdef BUILD_ESP32
@@ -1224,6 +1220,22 @@ int wlanif_l2_input_hook(uint8_t *buf, int size)
     }
     return 0;
 }
+
+#ifdef USE_HOSTED_WIFI
+#include "esp_wifi_remote.h"
+#include "esp_wifi_remote_api.h"
+static void my_esp_get_mac(uint8_t *mac)
+{
+    esp_wifi_remote_get_mac(WIFI_IF_STA, mac);
+}
+#else
+#include "esp_mac.h"
+static void my_esp_get_mac(uint8_t *mac)
+{
+    esp_read_mac(mac, ESP_MAC_WIFI_STA);
+}
+#endif
+
 #endif
 
 NE2000State *isa_ne2000_init(int base, int irq,
@@ -1257,7 +1269,7 @@ NE2000State *isa_ne2000_init(int base, int irq,
     const static uint8_t macaddr[6] = {0x52, 0x54, 0x00, 0x78, 0x9a, 0xbc};
     memcpy(s->macaddr, macaddr, 6);
 #else
-    esp_read_mac(s->macaddr, ESP_MAC_WIFI_STA);
+    my_esp_get_mac(s->macaddr);
     thene2000 = s;
 #endif
 
